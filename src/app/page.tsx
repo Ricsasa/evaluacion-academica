@@ -14,7 +14,7 @@ export default async function EvaluationsPage() {
   if (!user) return null;
 
   const [{ data: evaluations }, { data: sessions }] = await Promise.all([
-    supabase.from("evaluations").select("id, title, group_label").order("created_at", { ascending: false }),
+    supabase.from("evaluations").select("id, title").order("created_at", { ascending: false }),
     supabase.from("sessions").select("id, evaluation_id, status"),
   ]);
 
@@ -47,7 +47,6 @@ export default async function EvaluationsPage() {
               <CardHeader>
                 <CardTitle className="text-xl">{evaluation.title}</CardTitle>
                 <p className="text-muted-foreground text-sm">
-                  {evaluation.group_label ? `${evaluation.group_label} · ` : ""}
                   {count.total} aplicaciones · {count.completed} terminadas
                 </p>
               </CardHeader>

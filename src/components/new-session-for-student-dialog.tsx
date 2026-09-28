@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { GroupPicker } from "@/components/group-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
-import { startSession } from "@/lib/start-session";
+import { findOrCreateGroup, startSession } from "@/lib/start-session";
 import { toast } from "sonner";
 
 export function NewSessionForStudentDialog({
@@ -27,12 +28,15 @@ export function NewSessionForStudentDialog({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [group, setGroup] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function start(evaluationId: string) {
     setBusy(true);
     try {
-      const sessionId = await startSession(createClient(), teacherId, evaluationId, studentId);
+      const supabase = createClient();
+      const groupId = await findOrCreateGroup(supabase, teacherId, group);
+      const sessionId = await startSession(supabase, teacherId, evaluationId, studentId, groupId);
       router.push(`/sesiones/${sessionId}`);
     } catch {
       toast.error("No se pudo iniciar la evaluación.");
@@ -48,9 +52,10 @@ export function NewSessionForStudentDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Elige la evaluación</DialogTitle>
-          <DialogDescription>Se aplica a este alumno.</DialogDescription>
+          <DialogDescription>Elige el grupo y la evaluación para este alumno.</DialogDescription>
         </DialogHeader>
         <div className="space-y-2 py-2">
+          <GroupPicker studentId={studentId} value={group} onChange={setGroup} />
           {evaluations.length === 0 ? (
             <p className="text-muted-foreground">Todavía no tienes evaluaciones.</p>
           ) : null}
@@ -59,7 +64,7 @@ export function NewSessionForStudentDialog({
               key={evaluation.id}
               variant="outline"
               size="lg"
-              disabled={busy}
+              disabled={busy || !group.trim()}
               className="h-14 w-full justify-start text-base"
               onClick={() => start(evaluation.id)}
             >

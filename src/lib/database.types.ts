@@ -63,6 +63,27 @@ export type Database = {
         }
         Relationships: []
       }
+      groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
       item_responses: {
         Row: {
           id: string
@@ -222,6 +243,7 @@ export type Database = {
           applied_at: string
           completed_at: string | null
           evaluation_id: string
+          group_id: string | null
           id: string
           status: string
           student_id: string
@@ -231,6 +253,7 @@ export type Database = {
           applied_at?: string
           completed_at?: string | null
           evaluation_id: string
+          group_id?: string | null
           id?: string
           status?: string
           student_id: string
@@ -240,6 +263,7 @@ export type Database = {
           applied_at?: string
           completed_at?: string | null
           evaluation_id?: string
+          group_id?: string | null
           id?: string
           status?: string
           student_id?: string
@@ -251,6 +275,13 @@ export type Database = {
             columns: ["evaluation_id"]
             isOneToOne: false
             referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {

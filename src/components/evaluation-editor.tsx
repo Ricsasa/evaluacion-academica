@@ -35,20 +35,19 @@ export function EvaluationEditor({
   initialSections,
   hasSessions,
 }: {
-  evaluation: { id: string; title: string; group_label: string | null };
+  evaluation: { id: string; title: string };
   initialSections: Section[];
   hasSessions: boolean;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(evaluation.title);
-  const [groupLabel, setGroupLabel] = useState(evaluation.group_label ?? "");
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [busy, setBusy] = useState(false);
 
   async function saveEvaluation() {
     const { error } = await supabase
       .from("evaluations")
-      .update({ title: title.trim(), group_label: groupLabel.trim() || null })
+      .update({ title: title.trim() })
       .eq("id", evaluation.id);
     if (error) reportError();
   }
@@ -141,7 +140,7 @@ export function EvaluationEditor({
     const results = await Promise.all([
       supabase
         .from("evaluations")
-        .update({ title: title.trim(), group_label: groupLabel.trim() || null })
+        .update({ title: title.trim() })
         .eq("id", evaluation.id),
       ...sections.map((section) =>
         supabase
@@ -191,7 +190,7 @@ export function EvaluationEditor({
       ) : null}
 
       <Card>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
+        <CardContent>
           <div className="space-y-2">
             <Label htmlFor="evaluation-title">Título</Label>
             <Input
@@ -199,16 +198,6 @@ export function EvaluationEditor({
               className="h-12 text-base"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              onBlur={saveEvaluation}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="evaluation-group">Grupo</Label>
-            <Input
-              id="evaluation-group"
-              className="h-12 text-base"
-              value={groupLabel}
-              onChange={(event) => setGroupLabel(event.target.value)}
               onBlur={saveEvaluation}
             />
           </div>

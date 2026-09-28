@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 type Row = {
   sessionId: string;
   studentName: string;
+  groupName: string;
   status: string;
   perSection: Score[];
   total: Score;
@@ -28,26 +30,32 @@ type Row = {
 
 export function EvaluationReport({
   title,
-  groupLabel,
+  groups,
+  selectedGroup,
   sections,
   rows,
 }: {
   title: string;
-  groupLabel: string | null;
+  groups: { id: string; name: string }[];
+  selectedGroup: string | null;
   sections: { id: string; title: string; color: string }[];
   rows: Row[];
 }) {
+  const pathname = usePathname();
   const completed = rows.filter((row) => row.status === "completed").length;
+  const groupName = groups.find((group) => group.id === selectedGroup)?.name;
 
   function exportCsv() {
-    const header = ["Alumno", "Estado", ...sections.map((section) => section.title), "Total"];
+    const header = ["Alumno", "Grupo", "Estado", ...sections.map((section) => section.title), "Total"];
     const body = rows.map((row) => [
       row.studentName,
+      row.groupName,
       row.status === "completed" ? "Terminada" : "En progreso",
       ...row.perSection.map((score) => `${score.correct}/${score.total}`),
       `${row.total.correct}/${row.total.total}`,
     ]);
-    downloadCsv(`${title.replaceAll(" ", "_")}.csv`, [header, ...body]);
+    const name = groupName ? `${title} ${groupName}` : title;
+    downloadCsv(`${name.replaceAll(" ", "_")}.csv`, [header, ...body]);
   }
 
   return (
@@ -55,7 +63,7 @@ export function EvaluationReport({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="text-muted-foreground">{groupLabel ?? "Reporte del trimestre"}</p>
+          <p className="text-muted-foreground">{groupName ?? "Todos los grupos"}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="lg" onClick={exportCsv}>
@@ -66,6 +74,22 @@ export function EvaluationReport({
           </Button>
         </div>
       </div>
+
+      {groups.length > 1 ? (
+        <nav className="flex flex-wrap gap-2" aria-label="Filtrar por grupo">
+          {[{ id: null, name: "Todos" }, ...groups].map((group) => (
+            <Button
+              key={group.id ?? "todos"}
+              asChild
+              size="lg"
+              variant={group.id === selectedGroup ? "default" : "outline"}
+              className="text-base"
+            >
+              <Link href={group.id ? `${pathname}?grupo=${group.id}` : pathname}>{group.name}</Link>
+            </Button>
+          ))}
+        </nav>
+      ) : null}
 
       <Card>
         <CardContent className="grid grid-cols-3 gap-4 text-center">
@@ -146,7 +170,7 @@ export function EvaluationReport({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h2 className="text-xl font-semibold">{section.title}</h2>
                       <span className="text-lg">
-                        Grupo: {correct} de {total} ({percent({ correct, total, manual: false })}%)
+                        Total: {correct} de {total} ({percent({ correct, total, manual: false })}%)
                       </span>
                     </div>
                     <Table>

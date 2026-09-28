@@ -23,6 +23,7 @@ import { toast } from "sonner";
 type Row = {
   id: string;
   title: string;
+  groupName: string;
   status: string;
   appliedAt: string;
   correct: number;
@@ -60,6 +61,7 @@ export function StudentSessions({ rows }: { rows: Row[] }) {
                 {row.title}
               </Link>
               <p className="text-muted-foreground text-sm">
+                {row.groupName} ·{" "}
                 {new Date(row.appliedAt).toLocaleDateString("es-MX", {
                   day: "2-digit",
                   month: "long",

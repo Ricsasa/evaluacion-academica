@@ -21,7 +21,6 @@ export function NewEvaluationDialog({ teacherId }: { teacherId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [groupLabel, setGroupLabel] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function create(event: React.FormEvent) {
@@ -29,7 +28,7 @@ export function NewEvaluationDialog({ teacherId }: { teacherId: string }) {
     setBusy(true);
     const { data, error } = await createClient()
       .from("evaluations")
-      .insert({ teacher_id: teacherId, title: title.trim(), group_label: groupLabel.trim() || null })
+      .insert({ teacher_id: teacherId, title: title.trim() })
       .select("id")
       .single();
     setBusy(false);
@@ -63,16 +62,6 @@ export function NewEvaluationDialog({ teacherId }: { teacherId: string }) {
                 placeholder="Primer trimestre"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="group">Grupo (opcional)</Label>
-              <Input
-                id="group"
-                className="h-12 text-base"
-                placeholder="3° A"
-                value={groupLabel}
-                onChange={(event) => setGroupLabel(event.target.value)}
               />
             </div>
           </div>

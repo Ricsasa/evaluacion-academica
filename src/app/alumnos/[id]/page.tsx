@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { StudentSessions } from "@/components/student-sessions";
 import { NewSessionForStudentDialog } from "@/components/new-session-for-student-dialog";
+import { NO_GROUP_NAME } from "@/lib/groups";
 import { sectionScore, sumScores } from "@/lib/scores";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,7 +19,7 @@ export default async function StudentPage({ params }: PageProps<"/alumnos/[id]">
     supabase.from("students").select("id, name").eq("id", id).maybeSingle(),
     supabase
       .from("sessions")
-      .select("id, status, applied_at, evaluation_id, evaluations (title)")
+      .select("id, status, applied_at, evaluation_id, evaluations (title), groups (name)")
       .eq("student_id", id)
       .order("applied_at", { ascending: false }),
     supabase.from("evaluations").select("id, title").order("created_at", { ascending: false }),
@@ -68,6 +69,7 @@ export default async function StudentPage({ params }: PageProps<"/alumnos/[id]">
     return {
       id: session.id,
       title: session.evaluations?.title ?? "",
+      groupName: session.groups?.name ?? NO_GROUP_NAME,
       status: session.status,
       appliedAt: session.applied_at,
       correct: score.correct,

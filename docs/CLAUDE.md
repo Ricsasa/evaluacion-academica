@@ -35,6 +35,11 @@ This is not a written exam the child takes alone: the teacher reads the question
 ### Evaluation (`evaluations`)
 A template created by a teacher, used over a period (roughly a trimester/quarter) with all her students. Each trimester the teacher creates a **brand new evaluation from scratch** — sections and questions are **never reused or cloned** across evaluations; they are unique per evaluation.
 
+One evaluation is applied to several groups (e.g. "3° A" and "3° B"). The evaluation has no group of its own.
+
+### Group (`groups`)
+A class group of the teacher (e.g. "3° A"). The teacher picks the group when she applies an evaluation to a child, and the group is saved on the session. A new group is created on the fly from that same picker; there is no separate group management screen. The picker preselects the group of the last session (of that student, or of the teacher). A student belongs to every group where they have a session, so the history keeps the group the child had at that time.
+
 ### Section / Topic (`sections`)
 Each evaluation is divided into sections (e.g. "Numbers", "Adjectives", "Reading Comprehension"). Each section has:
 - A free-text **title**.
@@ -62,25 +67,26 @@ For each section, within a session, the system stores the correct/total count (a
 ## Main flows
 
 ### 1. Create an evaluation
-1. Teacher creates a new evaluation (title, optional group label).
+1. Teacher creates a new evaluation (title only; groups are picked when applying).
 2. Adds sections: title + color (from the 10 options).
 3. Within each section, adds questions/items as free text, one at a time, in whatever order she wants.
 4. If the teacher edits an evaluation that **already has applied sessions**, the system must show a **warning** (not a block) stating that sessions already exist and that the changes will not alter already-saved answers, but may create inconsistency between older and newer sessions.
 
 ### 2. Apply an evaluation to a child
 1. Teacher selects an active evaluation.
-2. Types or selects (autocomplete) the student's name → this creates or reuses a record in `students` and creates a `session`.
+2. Picks the group, then types or selects (autocomplete) the student's name → this creates or reuses a record in `students` and creates a `session` with that group.
 3. The **entire evaluation is shown at a glance**: all sections with all their questions, with large correct/incorrect controls per question and an optional text field for the child's answer.
 4. Every mark is **saved automatically** as the teacher goes.
 5. Each section's score recalculates itself; the teacher can tap it to manually override it.
 6. The teacher can leave at any time and resume later — the session stays `in_progress` until she taps the **"Finish" button**, which marks the session `completed` and confirms to her that it was fully saved.
 
-### 3. Student summary (post-application)
-- A view showing the history of evaluations applied to that child.
+### 3. Reports by group ("Reportes" section)
+- Lists the teacher's groups. Opening a group lists its students.
+- Opening a student shows the history of evaluations applied to that child, with the group of each session.
 - A button to start a **new evaluation** (session) for that same child.
 
 ### 4. Teacher reports (per trimester)
-Reports are always scoped to **a single evaluation/trimester at a time** (no cross-trimester comparison). Includes:
+Reports are always scoped to **a single evaluation/trimester at a time** (no cross-trimester comparison), and can be filtered by group. Includes:
 - **Totals**: number of students evaluated, completed vs. in-progress sessions.
 - **By student view**: list of students in that evaluation with their overall result; drilling in shows the detail by section and question (same as the individual summary).
 - **By section view**: list of sections in that evaluation; drilling into one shows a table of all students with their score for that specific section (to spot whether a whole topic was hard for several students).
@@ -94,6 +100,8 @@ Entity-relationship diagram (Mermaid `erDiagram` — Claude Code can parse this 
 erDiagram
   TEACHERS ||--o{ EVALUATIONS : creates
   TEACHERS ||--o{ STUDENTS : registers
+  TEACHERS ||--o{ GROUPS : owns
+  GROUPS ||--o{ SESSIONS : "groups"
   EVALUATIONS ||--o{ SECTIONS : contains
   SECTIONS ||--o{ ITEMS : contains
   EVALUATIONS ||--o{ SESSIONS : "applied as"
@@ -112,11 +120,15 @@ erDiagram
     uuid teacher_id FK
     string name
   }
+  GROUPS {
+    uuid id PK
+    uuid teacher_id FK
+    string name
+  }
   EVALUATIONS {
     uuid id PK
     uuid teacher_id FK
     string title
-    string group_label
     timestamp created_at
   }
   SECTIONS {
@@ -137,6 +149,7 @@ erDiagram
     uuid evaluation_id FK
     uuid student_id FK
     uuid teacher_id FK
+    uuid group_id FK
     timestamp applied_at
     string status
   }
@@ -161,6 +174,7 @@ erDiagram
 
 - `TEACHERS` corresponds to Supabase's `auth.users` (not necessarily its own table, or a minimal mirror table if additional profile fields are needed).
 - `SESSIONS.status` distinguishes `in_progress` / `completed`. It is an explicit column, not inferred: it only becomes `completed` when the teacher taps the "Finish" button, regardless of whether every item has an answer.
+- `SESSIONS.group_id` is nullable, and reports show a session without a group as "Sin grupo". The groups migration assigned every session that existed before it to a "3B" group of its teacher. `evaluations.group_label` is legacy: the app no longer reads it, and a later migration drops it.
 - `SECTIONS.color` stores one of **10 fixed options** (enum or lookup table — to be decided during implementation).
 - Every table that depends on a teacher (`evaluations`, `students`, and by inheritance `sections`, `items`, `sessions`, `item_responses`, `section_scores`) must have RLS policies checking `teacher_id = auth.uid()`, either directly or via join to the corresponding parent table.
 - There is no reuse of `sections`/`items` across evaluations — each evaluation is independent and self-contained.

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/", label: "Evaluaciones" },
-  { href: "/alumnos", label: "Alumnos" },
+  { href: "/reportes", label: "Reportes" },
 ];
 
 export function SiteHeader({ email }: { email: string }) {
@@ -34,7 +34,8 @@ export function SiteHeader({ email }: { email: string }) {
               size="lg"
               className={cn(
                 "text-base",
-                pathname === link.href && "bg-accent text-accent-foreground",
+                (link.href === "/" ? pathname === "/" : pathname.startsWith(link.href)) &&
+                  "bg-accent text-accent-foreground",
               )}
             >
               <Link href={link.href}>{link.label}</Link>

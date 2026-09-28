@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { GroupPicker } from "@/components/group-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { findOrCreateStudent, startSession } from "@/lib/start-session";
+import { findOrCreateGroup, findOrCreateStudent, startSession } from "@/lib/start-session";
 import { toast } from "sonner";
 
 const DEBOUNCE_MS = 250;
@@ -43,6 +44,7 @@ export function StartSessionDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [group, setGroup] = useState("");
   const [found, setFound] = useState<{ query: string; students: Student[] }>({
     query: "",
     students: [],
@@ -79,13 +81,17 @@ export function StartSessionDialog({
   // With matches on screen, the teacher picks one instead of creating a name
   // that only differs by a word.
   const canSubmit = query.length > 0 && !searching && (exact || results.length === 0);
+  const hasGroup = group.trim().length > 0;
 
   async function start(studentName: string) {
     setBusy(true);
     try {
       const supabase = createClient();
-      const studentId = await findOrCreateStudent(supabase, teacherId, studentName);
-      const sessionId = await startSession(supabase, teacherId, evaluationId, studentId);
+      const [studentId, groupId] = await Promise.all([
+        findOrCreateStudent(supabase, teacherId, studentName),
+        findOrCreateGroup(supabase, teacherId, group),
+      ]);
+      const sessionId = await startSession(supabase, teacherId, evaluationId, studentId, groupId);
       router.push(`/sesiones/${sessionId}`);
     } catch {
       toast.error("No se pudo iniciar la evaluación.");
@@ -97,6 +103,7 @@ export function StartSessionDialog({
     setOpen(nextOpen);
     if (!nextOpen) {
       setName("");
+      setGroup("");
       setFound({ query: "", students: [] });
     }
   }
@@ -116,11 +123,12 @@ export function StartSessionDialog({
           <DialogHeader>
             <DialogTitle>Aplicar evaluación</DialogTitle>
             <DialogDescription>
-              Escribe el nombre del alumno. Si ya existe, aparece abajo.
+              Elige el grupo y escribe el nombre del alumno. Si ya existe, aparece abajo.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-4">
+            <GroupPicker value={group} onChange={setGroup} />
             <Label htmlFor="student">Alumno</Label>
             <Input
               id="student"
@@ -140,7 +148,7 @@ export function StartSessionDialog({
                   type="button"
                   variant="outline"
                   size="lg"
-                  disabled={busy}
+                  disabled={busy || !hasGroup}
                   className="h-12 w-full justify-start text-base"
                   onClick={() => start(student.name)}
                 >
@@ -165,7 +173,7 @@ export function StartSessionDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit" size="lg" disabled={busy || !canSubmit}>
+            <Button type="submit" size="lg" disabled={busy || !canSubmit || !hasGroup}>
               {isNew ? "Crear y empezar" : "Empezar"}
             </Button>
           </DialogFooter>

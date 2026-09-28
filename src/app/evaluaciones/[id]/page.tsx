@@ -8,7 +8,7 @@ export default async function EvaluationEditorPage({ params }: PageProps<"/evalu
   const supabase = await createClient();
 
   const [{ data: evaluation }, { data: sections }, { count: sessionCount }] = await Promise.all([
-    supabase.from("evaluations").select("id, title, group_label").eq("id", id).maybeSingle(),
+    supabase.from("evaluations").select("id, title").eq("id", id).maybeSingle(),
     supabase
       .from("sections")
       .select("id, title, color, notes, position, items (id, content, position)")
